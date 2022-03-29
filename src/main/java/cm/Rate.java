@@ -1,6 +1,7 @@
 package cm;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,6 +11,8 @@ public class Rate {
     private BigDecimal hourlyReducedRate;
     private ArrayList<Period> reduced = new ArrayList<>();
     private ArrayList<Period> normal = new ArrayList<>();
+
+    private InterfaceCalculate calculations;
 
     public Rate(CarParkKind kind, BigDecimal normalRate, BigDecimal reducedRate, ArrayList<Period> reducedPeriods
             , ArrayList<Period> normalPeriods) {
@@ -22,7 +25,7 @@ public class Rate {
         if (normalRate.compareTo(BigDecimal.ZERO) < 0 || reducedRate.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("A rate cannot be negative");
         }
-        if (normalRate.compareTo(reducedRate) <= 0) {
+        if (normalRate.compareTo(reducedRate) < 0) {
             throw new IllegalArgumentException("The normal rate cannot be greater or equal to the reduced rate");
         }
         if (!isValidPeriods(reducedPeriods) || !isValidPeriods(normalPeriods)) {
@@ -91,8 +94,31 @@ public class Rate {
     public BigDecimal calculate(Period periodStay) {
         int normalRateHours = periodStay.occurences(normal);
         int reducedRateHours = periodStay.occurences(reduced);
-        return (this.hourlyNormalRate.multiply(BigDecimal.valueOf(normalRateHours))).add(
+
+        InterfaceCalculate calculateInstance;
+
+        BigDecimal cost = this.hourlyNormalRate.multiply(BigDecimal.valueOf(normalRateHours)).add(
                 this.hourlyReducedRate.multiply(BigDecimal.valueOf(reducedRateHours)));
+
+        switch (this.kind) {
+            case VISITOR -> {
+                calculateInstance = new VisitorRate();
+                cost = calculateInstance.calculate(cost).setScale(2, RoundingMode.HALF_EVEN);
+            }
+            case MANAGEMENT -> {
+                calculateInstance = new ManagementRate();
+                cost = calculateInstance.calculate(cost).setScale(2, RoundingMode.HALF_EVEN);
+            }
+            case STUDENT -> {
+                calculateInstance = new StudentRate();
+                cost = calculateInstance.calculate(cost).setScale(2, RoundingMode.HALF_EVEN);
+            }
+            default -> {
+                calculateInstance = new StaffRate();
+                cost = calculateInstance.calculate(cost).setScale(2, RoundingMode.HALF_EVEN);
+            }
+        }
+        return cost;
     }
 
 }
