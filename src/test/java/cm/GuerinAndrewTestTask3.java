@@ -430,6 +430,4 @@ public class GuerinAndrewTestTask3 {
         Rate rate = new Rate(CarParkKind.STAFF, normalRate, reducedRate, reducedPeriods, normalPeriods);
         Assertions.assertEquals(new BigDecimal("16.00"), rate.calculate(new Period(15,22)));
     }
-
-
 }
